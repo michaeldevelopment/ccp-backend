@@ -1,0 +1,31 @@
+# Dependencias
+node_modules/
+
+# Build output
+dist/
+
+# Variables de entorno — NUNCA commitear secrets reales
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+
+# Tests
+coverage/
+
+# Claude
+.agents
+.claude
+BACKEND_SPEC.md
+/docs
+
+/src/generated/prisma

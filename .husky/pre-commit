@@ -1,0 +1,11 @@
+echo "▶ lint-staged (format + lint staged files)..."
+npx lint-staged
+
+echo "▶ TypeScript type check..."
+npx tsc --noEmit
+
+echo "▶ Build..."
+npm run build
+
+echo "▶ Tests..."
+npm test

@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  COACH
+  TEACHER
+  STUDENT
+}
+
+enum UserStatus {
+  PENDING_ACTIVATION
+  ACTIVE
+  PAUSED
+  GRADUATED
+  PENDING_REASSIGNMENT
+}
+
+enum ReassignmentStatus {
+  PENDING
+  RESOLVED
+  GRADUATED
+  UNDONE
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  name             String?
+  passwordHash     String?
+  refreshTokenHash      String?
+  refreshTokenExpiresAt DateTime?
+  role             Role
+  status       UserStatus @default(PENDING_ACTIVATION)
+  groupId      String?
+  entryModule  Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  group               Group?               @relation(fields: [groupId], references: [id])
+  activationToken     ActivationToken?
+  passwordResetTokens PasswordResetToken[]
+  progress            Progress[]
+  reassignment        Reassignment?
+}
+
+model ActivationToken {
+  id     String    @id @default(uuid())
+  userId String    @unique
+  token  String    @unique
+  usedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Group {
+  id              String   @id @default(uuid())
+  name            String
+  entryModule     Int
+  unlockedModules Int[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  students User[]
+}
+
+model Module {
+  id          String   @id @default(uuid())
+  number      Int      @unique
+  title       String
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  classes Class[]
+}
+
+model Class {
+  id          String    @id @default(uuid())
+  moduleId    String
+  title       String
+  description String    @default("")
+  vimeoUrl    String
+  attachments Json      @default("[]")
+  publishedAt DateTime?
+  isPublished Boolean   @default(false)
+  notify      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  module   Module     @relation(fields: [moduleId], references: [id])
+  progress Progress[]
+}
+
+model Progress {
+  id              String   @id @default(uuid())
+  userId          String
+  classId         String
+  pct             Float    @default(0)
+  lastPositionSec Int      @default(0)
+  completed       Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, classId])
+}
+
+model Reassignment {
+  id         String             @id @default(uuid())
+  userId     String             @unique
+  status     ReassignmentStatus @default(PENDING)
+  createdAt  DateTime           @default(now())
+  resolvedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
