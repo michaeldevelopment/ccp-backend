@@ -15,6 +15,15 @@ export interface UserFilters extends UserBaseData {
 export interface UserUpdateData extends UserBaseData {
   groupId?: string | null;
   entryModule?: number | null;
+  accessibleModules?: number[];
+  completedModules?: number[];
+  pausedAt?: Date | null;
+  graduatedAt?: Date | null;
+}
+
+export interface ExpiredPausedUser {
+  id: string;
+  pausedAt: Date;
 }
 
 export interface IUserRepository {
@@ -45,4 +54,5 @@ export interface IUserRepository {
   update(userId: string, data: UserUpdateData): Promise<User>;
   delete(userId: string): Promise<void>;
   countByRole(role: Role): Promise<number>;
+  findExpiredPaused(before: Date): Promise<ExpiredPausedUser[]>;
 }

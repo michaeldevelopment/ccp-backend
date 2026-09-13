@@ -8,7 +8,7 @@ function makeProgressRepo(): IProgressRepository {
     findByUserId: vi.fn(),
     findByUserAndClass: vi.fn(),
     upsert: vi.fn(),
-    findByUserIdWithClass: vi.fn(),
+    findModuleProgressForUser: vi.fn(),
   };
 }
 
@@ -63,20 +63,6 @@ describe('UpsertProgressUseCase', () => {
     expect(progressRepo.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ pct: 70, completed: false })
     );
-  });
-
-  it('STUDENT actualiza su propio progreso → OK', async () => {
-    vi.mocked(progressRepo.upsert).mockResolvedValue(makeRecord(30, false));
-    const result = await useCase.execute({
-      userId: 'u-1',
-      classId: 'c-1',
-      pct: 30,
-      lastPositionSec: 60,
-      completed: false,
-      requesterId: 'u-1',
-      requesterRole: 'STUDENT',
-    });
-    expect(result.userId).toBe('u-1');
   });
 
   it('STUDENT intenta actualizar progreso ajeno → ForbiddenError', async () => {

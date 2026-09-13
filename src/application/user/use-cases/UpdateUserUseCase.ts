@@ -3,6 +3,7 @@ import { IUserRepository, UserUpdateData } from '@domain/user/repositories/IUser
 import { IGroupRepository } from '@domain/group/repositories/IGroupRepository';
 import { NotFoundError, ForbiddenError, ValidationError } from '@domain/shared/errors';
 import { UserResult, toUserResult } from './userResult';
+import { computeAccessibleModules } from '@domain/user/services/AccessibleModulesService';
 
 interface UpdateUserInput {
   callerId: string;
@@ -37,15 +38,16 @@ export class UpdateUserUseCase {
       throw new ValidationError('El estado PENDING_ACTIVATION no puede asignarse manualmente');
     }
 
+    if (input.status === 'PENDING_REASSIGNMENT') {
+      throw new ValidationError(
+        'PENDING_REASSIGNMENT solo puede asignarse automáticamente por el sistema'
+      );
+    }
+
     const effectiveRole = input.role ?? target.role;
 
-    if (
-      effectiveRole === 'TEACHER' &&
-      (input.status === 'GRADUATED' || input.status === 'PENDING_REASSIGNMENT')
-    ) {
-      throw new ValidationError(
-        'Los teachers no pueden tener estado GRADUATED o PENDING_REASSIGNMENT'
-      );
+    if (effectiveRole === 'TEACHER' && input.status === 'GRADUATED') {
+      throw new ValidationError('Los teachers no pueden tener estado GRADUATED');
     }
 
     if (effectiveRole === 'TEACHER' && input.groupId !== undefined) {
@@ -63,12 +65,38 @@ export class UpdateUserUseCase {
     if (input.groupId !== undefined) {
       if (input.groupId === null) {
         updateData.entryModule = null;
+        updateData.accessibleModules = [];
       } else {
         const group = await this.groupRepo.findById(input.groupId);
         if (!group) throw new NotFoundError('Grupo no encontrado');
-        updateData.entryModule =
+        const entryModule =
           group.unlockedModules.length > 0 ? Math.min(...group.unlockedModules) : group.entryModule;
+        updateData.entryModule = entryModule;
+        updateData.accessibleModules = computeAccessibleModules(entryModule, group.unlockedModules);
       }
+    }
+
+    if (input.status === 'PAUSED' && target.status !== 'PAUSED') {
+      updateData.pausedAt = new Date();
+    }
+
+    if (target.status === 'PAUSED' && input.status && input.status !== 'PAUSED') {
+      updateData.pausedAt = null;
+    }
+
+    if (input.status === 'GRADUATED' && target.status !== 'GRADUATED') {
+      updateData.graduatedAt = new Date();
+    }
+
+    if (target.status === 'GRADUATED' && input.status && input.status !== 'GRADUATED') {
+      updateData.graduatedAt = null;
+    }
+
+    if (input.status === 'ACTIVE' && target.status === 'PENDING_REASSIGNMENT') {
+      updateData.groupId = null;
+      updateData.entryModule = null;
+      updateData.accessibleModules = [];
+      updateData.pausedAt = null;
     }
 
     const updated = await this.userRepo.update(input.userId, updateData);

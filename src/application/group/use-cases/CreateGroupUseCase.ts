@@ -1,6 +1,7 @@
 import { IGroupRepository } from '@domain/group/repositories/IGroupRepository';
 import { IUserRepository } from '@domain/user/repositories/IUserRepository';
 import { GroupResult, toGroupResult } from './groupResult';
+import { computeAccessibleModules } from '@domain/user/services/AccessibleModulesService';
 
 interface CreateGroupInput {
   name: string;
@@ -24,9 +25,12 @@ export class CreateGroupUseCase {
 
     const entryModule =
       group.unlockedModules.length > 0 ? Math.min(...group.unlockedModules) : group.entryModule;
+    const accessibleModules = computeAccessibleModules(entryModule, group.unlockedModules);
 
     await Promise.all(
-      input.studentIds.map((studentId) => this.userRepo.update(studentId, { entryModule }))
+      input.studentIds.map((studentId) =>
+        this.userRepo.update(studentId, { entryModule, accessibleModules })
+      )
     );
 
     const studentIds = await this.groupRepo.findStudentIds(group.id);

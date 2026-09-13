@@ -1,8 +1,5 @@
 import { IUserRepository } from '@domain/user/repositories/IUserRepository';
-import {
-  IProgressRepository,
-  ProgressRecordWithClass,
-} from '@domain/user/repositories/IProgressRepository';
+import { IProgressRepository, ModuleProgress } from '@domain/user/repositories/IProgressRepository';
 import { NotFoundError } from '@domain/shared/errors';
 
 export class GetUserProgressUseCase {
@@ -11,9 +8,9 @@ export class GetUserProgressUseCase {
     private readonly progressRepo: IProgressRepository
   ) {}
 
-  async execute(input: { userId: string }): Promise<ProgressRecordWithClass[]> {
+  async execute(input: { userId: string }): Promise<ModuleProgress[]> {
     const user = await this.userRepo.findById(input.userId);
     if (!user) throw new NotFoundError('Usuario no encontrado');
-    return this.progressRepo.findByUserIdWithClass(input.userId);
+    return this.progressRepo.findModuleProgressForUser(input.userId);
   }
 }

@@ -28,14 +28,18 @@ export class Group {
     if (this.unlockedModules.length === 0) {
       throw new Error('Grupo sin módulos desbloqueados');
     }
-    return Math.max(...this.unlockedModules);
+    return this.unlockedModules[this.unlockedModules.length - 1];
+  }
+
+  nextModule(): number {
+    return this.currentModule() === 9 ? 1 : this.currentModule() + 1;
   }
 
   canAdvance(): boolean {
-    return this.currentModule() < 9;
+    return new Set(this.unlockedModules).size < 9;
   }
 
   canRetreat(): boolean {
-    return this.currentModule() > this.entryModule;
+    return this.unlockedModules.length > 1;
   }
 }

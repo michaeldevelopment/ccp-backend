@@ -3,6 +3,7 @@ import {
   IUserRepository,
   UserFilters,
   UserUpdateData,
+  ExpiredPausedUser,
 } from '@domain/user/repositories/IUserRepository';
 import { User } from '@domain/user/entities/User';
 import { ConflictError } from '@domain/shared/errors';
@@ -21,6 +22,10 @@ function toUser(raw: PrismaUser): User {
     status: raw.status,
     groupId: raw.groupId,
     entryModule: raw.entryModule,
+    accessibleModules: raw.accessibleModules,
+    completedModules: raw.completedModules,
+    pausedAt: raw.pausedAt,
+    graduatedAt: raw.graduatedAt,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   });
@@ -129,5 +134,18 @@ export class PrismaUserRepository implements IUserRepository {
 
   async countByRole(role: Role): Promise<number> {
     return prisma.user.count({ where: { role } });
+  }
+
+  async findExpiredPaused(before: Date): Promise<ExpiredPausedUser[]> {
+    const rows = await prisma.user.findMany({
+      where: {
+        status: 'PAUSED',
+        pausedAt: { not: null, lte: before },
+      },
+      select: { id: true, pausedAt: true },
+    });
+    return rows
+      .filter((r): r is { id: string; pausedAt: Date } => r.pausedAt !== null)
+      .map((r) => ({ id: r.id, pausedAt: r.pausedAt }));
   }
 }

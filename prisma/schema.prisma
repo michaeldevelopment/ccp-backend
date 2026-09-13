@@ -22,13 +22,6 @@ enum UserStatus {
   PENDING_REASSIGNMENT
 }
 
-enum ReassignmentStatus {
-  PENDING
-  RESOLVED
-  GRADUATED
-  UNDONE
-}
-
 model User {
   id           String     @id @default(uuid())
   email        String     @unique
@@ -38,16 +31,19 @@ model User {
   refreshTokenExpiresAt DateTime?
   role             Role
   status       UserStatus @default(PENDING_ACTIVATION)
-  groupId      String?
-  entryModule  Int?
-  createdAt    DateTime   @default(now())
+  groupId           String?
+  entryModule       Int?
+  accessibleModules Int[]    @default([])
+  completedModules  Int[]    @default([])
+  pausedAt          DateTime?
+  graduatedAt       DateTime?
+  createdAt         DateTime @default(now())
   updatedAt    DateTime   @updatedAt
 
   group               Group?               @relation(fields: [groupId], references: [id])
   activationToken     ActivationToken?
   passwordResetTokens PasswordResetToken[]
   progress            Progress[]
-  reassignment        Reassignment?
 }
 
 model ActivationToken {
@@ -123,12 +119,3 @@ model Progress {
   @@unique([userId, classId])
 }
 
-model Reassignment {
-  id         String             @id @default(uuid())
-  userId     String             @unique
-  status     ReassignmentStatus @default(PENDING)
-  createdAt  DateTime           @default(now())
-  resolvedAt DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}

@@ -5,5 +5,4 @@ export { groupRouter } from './group.routes';
 export { moduleRouter } from './module.routes';
 export { classRouter } from './class.routes';
 export { progressRouter } from './progress.routes';
-export { reassignmentRouter } from './reassignment.routes';
 export { dashboardRouter, notificationsRouter } from './dashboard.routes';

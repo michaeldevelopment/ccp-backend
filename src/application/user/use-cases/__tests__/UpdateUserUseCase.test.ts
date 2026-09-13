@@ -20,6 +20,7 @@ function makeUserRepo(): IUserRepository {
     update: vi.fn(),
     delete: vi.fn(),
     countByRole: vi.fn(),
+    findExpiredPaused: vi.fn(),
   };
 }
 
@@ -29,6 +30,7 @@ function makeGroupRepo(): IGroupRepository {
     findMany: vi.fn(),
     findByIdWithStudents: vi.fn(),
     findStudentIds: vi.fn().mockResolvedValue([]),
+    findActiveStudentIds: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -38,7 +40,17 @@ function makeGroupRepo(): IGroupRepository {
   };
 }
 
-function makeUser(role: Role = Role.STUDENT): User {
+function makeUser(
+  role: Role = Role.STUDENT,
+  overrides: Partial<{
+    status: 'ACTIVE' | 'PAUSED' | 'GRADUATED' | 'PENDING_REASSIGNMENT';
+    groupId: string | null;
+    entryModule: number | null;
+    pausedAt: Date | null;
+    graduatedAt: Date | null;
+    accessibleModules: number[];
+  }> = {}
+): User {
   return new User({
     id: 'user-1',
     email: 'a@b.com',
@@ -46,9 +58,12 @@ function makeUser(role: Role = Role.STUDENT): User {
     passwordHash: '$hash',
     refreshTokenHash: null,
     role,
-    status: 'ACTIVE',
-    groupId: null,
-    entryModule: null,
+    status: overrides.status ?? 'ACTIVE',
+    groupId: overrides.groupId ?? null,
+    entryModule: overrides.entryModule ?? null,
+    accessibleModules: overrides.accessibleModules,
+    pausedAt: overrides.pausedAt ?? null,
+    graduatedAt: overrides.graduatedAt ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -159,5 +174,106 @@ describe('UpdateUserUseCase', () => {
     await expect(
       useCase.execute({ callerId: 'c1', callerRole: 'TEACHER', userId: 'user-1', role: Role.COACH })
     ).rejects.toThrow(ForbiddenError);
+  });
+
+  it('al pasar ACTIVE → PAUSED setea pausedAt = new Date()', async () => {
+    vi.mocked(userRepo.findById).mockResolvedValue(makeUser(Role.STUDENT, { status: 'ACTIVE' }));
+    await useCase.execute({
+      callerId: 'c1',
+      callerRole: 'COACH',
+      userId: 'user-1',
+      status: 'PAUSED',
+    });
+    expect(userRepo.update).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ status: 'PAUSED', pausedAt: expect.any(Date) })
+    );
+  });
+
+  it('al pasar PAUSED → ACTIVE limpia pausedAt', async () => {
+    vi.mocked(userRepo.findById).mockResolvedValue(
+      makeUser(Role.STUDENT, { status: 'PAUSED', pausedAt: new Date() })
+    );
+    await useCase.execute({
+      callerId: 'c1',
+      callerRole: 'COACH',
+      userId: 'user-1',
+      status: 'ACTIVE',
+    });
+    expect(userRepo.update).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ status: 'ACTIVE', pausedAt: null })
+    );
+  });
+
+  it('rechaza asignar PENDING_REASSIGNMENT manualmente', async () => {
+    vi.mocked(userRepo.findById).mockResolvedValue(makeUser(Role.STUDENT));
+    await expect(
+      useCase.execute({
+        callerId: 'c1',
+        callerRole: 'COACH',
+        userId: 'user-1',
+        status: 'PENDING_REASSIGNMENT',
+      })
+    ).rejects.toThrow(ValidationError);
+    expect(userRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('reactivar desde PENDING_REASSIGNMENT limpia groupId, entryModule, accessibleModules y pausedAt', async () => {
+    vi.mocked(userRepo.findById).mockResolvedValue(
+      makeUser(Role.STUDENT, {
+        status: 'PENDING_REASSIGNMENT',
+        groupId: 'g-1',
+        entryModule: 3,
+        accessibleModules: [3, 4, 5],
+        pausedAt: new Date(),
+      })
+    );
+    await useCase.execute({
+      callerId: 'c1',
+      callerRole: 'COACH',
+      userId: 'user-1',
+      status: 'ACTIVE',
+    });
+    expect(userRepo.update).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        status: 'ACTIVE',
+        groupId: null,
+        entryModule: null,
+        accessibleModules: [],
+        pausedAt: null,
+      })
+    );
+  });
+
+  it('al pasar ACTIVE → GRADUATED setea graduatedAt = new Date()', async () => {
+    vi.mocked(userRepo.findById).mockResolvedValue(makeUser(Role.STUDENT, { status: 'ACTIVE' }));
+    await useCase.execute({
+      callerId: 'c1',
+      callerRole: 'COACH',
+      userId: 'user-1',
+      status: 'GRADUATED',
+    });
+    expect(userRepo.update).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ status: 'GRADUATED', graduatedAt: expect.any(Date) })
+    );
+  });
+
+  it('al pasar GRADUATED → ACTIVE limpia graduatedAt', async () => {
+    vi.mocked(userRepo.findById).mockResolvedValue(
+      makeUser(Role.STUDENT, { status: 'GRADUATED', graduatedAt: new Date() })
+    );
+    await useCase.execute({
+      callerId: 'c1',
+      callerRole: 'COACH',
+      userId: 'user-1',
+      status: 'ACTIVE',
+    });
+    expect(userRepo.update).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ status: 'ACTIVE', graduatedAt: null })
+    );
   });
 });

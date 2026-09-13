@@ -48,10 +48,6 @@ export class LoginUseCase {
       throw new ForbiddenError('Tu cuenta aún no ha sido activada. Revisa tu email.');
     }
 
-    if (user.isPaused()) {
-      throw new ForbiddenError('Tu cuenta está pausada.');
-    }
-
     const refreshToken = this.jwtService.generateRefreshToken();
     const hash = this.jwtService.hashRefreshToken(refreshToken);
     const expiresAt = new Date(Date.now() + THIRTY_DAYS_MS);

@@ -16,7 +16,7 @@ export class PrismaDashboardRepository implements IDashboardRepository {
         prisma.user.count({ where: { role: 'STUDENT', status: 'ACTIVE' } }),
         prisma.user.count({ where: { role: 'STUDENT' } }),
         prisma.group.count(),
-        prisma.reassignment.count({ where: { status: 'PENDING' } }),
+        prisma.user.count({ where: { role: 'STUDENT', status: 'PENDING_REASSIGNMENT' } }),
         prisma.group.findMany({
           orderBy: { createdAt: 'desc' },
           include: { _count: { select: { students: true } } },
@@ -66,11 +66,11 @@ export class PrismaDashboardRepository implements IDashboardRepository {
     const now = new Date();
     const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
-    const [reassignments, scheduledClasses] = await Promise.all([
-      prisma.reassignment.findMany({
-        where: { status: 'PENDING' },
-        include: { user: { select: { name: true, email: true } } },
-        orderBy: { createdAt: 'asc' },
+    const [pendingUsers, scheduledClasses] = await Promise.all([
+      prisma.user.findMany({
+        where: { role: 'STUDENT', status: 'PENDING_REASSIGNMENT' },
+        select: { id: true, name: true, email: true, updatedAt: true },
+        orderBy: { updatedAt: 'asc' },
       }),
       prisma.class.findMany({
         where: { isPublished: false, publishedAt: { gte: now, lte: in48h } },
@@ -79,11 +79,11 @@ export class PrismaDashboardRepository implements IDashboardRepository {
     ]);
 
     const items: NotificationItem[] = [
-      ...reassignments.map((r) => ({
-        type: 'REASSIGNMENT' as const,
-        createdAt: r.createdAt,
-        reassignmentId: r.id,
-        userName: r.user.name ?? r.user.email,
+      ...pendingUsers.map((u) => ({
+        type: 'PENDING_REASSIGNMENT' as const,
+        createdAt: u.updatedAt,
+        userId: u.id,
+        userName: u.name ?? u.email,
       })),
       ...scheduledClasses.map((c) => ({
         type: 'SCHEDULED_CLASS' as const,

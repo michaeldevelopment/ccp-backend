@@ -35,16 +35,13 @@ export class UpdateClassUseCase {
 
     const publishingNow = input.isPublished === true && !cls.isPublished;
 
-    if (input.publishedAt && input.publishedAt <= new Date() && !publishingNow) {
+    if (publishingNow) {
+      input.publishedAt = new Date();
+    } else if (input.publishedAt && input.publishedAt <= new Date()) {
       throw new ValidationError('publishedAt debe ser una fecha futura');
     }
 
     const { classId, ...data } = input;
-
-    if (publishingNow && data.publishedAt == null) {
-      data.publishedAt = new Date();
-    }
-
     const updated = await this.classRepo.update(classId, data);
 
     if (publishingNow && updated.notify) {

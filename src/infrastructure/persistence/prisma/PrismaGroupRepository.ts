@@ -4,6 +4,7 @@ import {
   GroupFilters,
   GroupWithStudents,
   GroupWithStudentIds,
+  UpdateUnlockedModulesOpts,
 } from '@domain/group/repositories/IGroupRepository';
 import { Group } from '@domain/group/entities/Group';
 import { User } from '@domain/user/entities/User';
@@ -33,6 +34,8 @@ function toUser(raw: DbUser): User {
     status: raw.status,
     groupId: raw.groupId,
     entryModule: raw.entryModule,
+    accessibleModules: raw.accessibleModules,
+    completedModules: raw.completedModules,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   });
@@ -85,6 +88,14 @@ export class PrismaGroupRepository implements IGroupRepository {
     return students.map((s) => s.id);
   }
 
+  async findActiveStudentIds(groupId: string): Promise<string[]> {
+    const students = await prisma.user.findMany({
+      where: { groupId, role: 'STUDENT', status: 'ACTIVE' },
+      select: { id: true },
+    });
+    return students.map((s) => s.id);
+  }
+
   async create(data: {
     name: string;
     entryModule: number;
@@ -97,7 +108,11 @@ export class PrismaGroupRepository implements IGroupRepository {
       if (studentIds.length > 0) {
         await tx.user.updateMany({
           where: { id: { in: studentIds }, role: 'STUDENT', status: 'ACTIVE' },
-          data: { groupId: group.id, entryModule: group.entryModule },
+          data: {
+            groupId: group.id,
+            entryModule: group.entryModule,
+            accessibleModules: [group.entryModule],
+          },
         });
       }
       return toGroup(group);
@@ -121,39 +136,71 @@ export class PrismaGroupRepository implements IGroupRepository {
     return count > 0;
   }
 
-  async updateUnlockedModules(id: string, modules: number[]): Promise<Group> {
-    const raw = await prisma.group.update({ where: { id }, data: { unlockedModules: modules } });
-    return toGroup(raw);
+  async updateUnlockedModules(
+    id: string,
+    modules: number[],
+    opts?: UpdateUnlockedModulesOpts
+  ): Promise<Group> {
+    const retreatedModule = opts?.retreatedModule;
+
+    if (retreatedModule === undefined) {
+      const raw = await prisma.group.update({
+        where: { id },
+        data: { unlockedModules: modules },
+      });
+      return toGroup(raw);
+    }
+    return prisma.$transaction(async (tx) => {
+      const raw = await tx.group.update({
+        where: { id },
+        data: { unlockedModules: modules },
+      });
+      const affected = await tx.user.findMany({
+        where: {
+          groupId: id,
+          role: 'STUDENT',
+          NOT: { entryModule: retreatedModule },
+          accessibleModules: { has: retreatedModule },
+        },
+        select: { id: true, accessibleModules: true },
+      });
+      if (affected.length > 0) {
+        await Promise.all(
+          affected.map((s) =>
+            tx.user.update({
+              where: { id: s.id },
+              data: { accessibleModules: s.accessibleModules.filter((m) => m !== retreatedModule) },
+            })
+          )
+        );
+      }
+      return toGroup(raw);
+    });
   }
 
-  async advanceModule(
-    id: string,
-    newModules: number[],
-    triggerReassignment: boolean
-  ): Promise<Group> {
+  async advanceModule(id: string, newModules: number[]): Promise<Group> {
     return prisma.$transaction(async (tx) => {
       const group = await tx.group.update({
         where: { id },
         data: { unlockedModules: newModules },
       });
 
-      if (triggerReassignment) {
-        const eligible = await tx.user.findMany({
-          where: { groupId: id, role: 'STUDENT', status: 'ACTIVE', entryModule: { gt: 1 } },
-          select: { id: true },
-        });
+      const nextModule = newModules[newModules.length - 1];
 
-        if (eligible.length > 0) {
-          const userIds = eligible.map((u) => u.id);
-          await tx.user.updateMany({
-            where: { id: { in: userIds } },
-            data: { status: 'PENDING_REASSIGNMENT' },
-          });
-          await tx.reassignment.createMany({
-            data: userIds.map((userId) => ({ userId, status: 'PENDING' })),
-            skipDuplicates: true,
-          });
-        }
+      const toGrant = await tx.user.findMany({
+        where: {
+          groupId: id,
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          NOT: { accessibleModules: { has: nextModule } },
+        },
+        select: { id: true },
+      });
+      if (toGrant.length > 0) {
+        await tx.user.updateMany({
+          where: { id: { in: toGrant.map((s) => s.id) } },
+          data: { accessibleModules: { push: nextModule } },
+        });
       }
 
       return toGroup(group);

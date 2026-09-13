@@ -8,6 +8,8 @@ export interface UserResult {
   status: string;
   groupId: string | null;
   entryModule: number | null;
+  pausedAt: string | null;
+  graduatedAt: string | null;
 }
 
 export function toUserResult(user: User): UserResult {
@@ -19,5 +21,7 @@ export function toUserResult(user: User): UserResult {
     status: user.status,
     groupId: user.groupId,
     entryModule: user.entryModule,
+    pausedAt: user.pausedAt ? user.pausedAt.toISOString() : null,
+    graduatedAt: user.graduatedAt ? user.graduatedAt.toISOString() : null,
   };
 }

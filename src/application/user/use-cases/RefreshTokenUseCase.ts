@@ -34,7 +34,7 @@ export class RefreshTokenUseCase {
     }
 
     if (!user.canLogin()) {
-      throw new ForbiddenError('Tu cuenta está pausada.');
+      throw new ForbiddenError('Tu cuenta no tiene acceso al sistema.');
     }
 
     const newRefreshToken = this.jwtService.generateRefreshToken();

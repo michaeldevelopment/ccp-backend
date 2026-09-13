@@ -35,9 +35,9 @@ describe('User entity', () => {
     expect(makeUser('ACTIVE').isPaused()).toBe(false);
   });
 
-  it('canLogin() returns false for PENDING_ACTIVATION and PAUSED', () => {
+  it('canLogin() returns false only for PENDING_ACTIVATION', () => {
     expect(makeUser('PENDING_ACTIVATION').canLogin()).toBe(false);
-    expect(makeUser('PAUSED').canLogin()).toBe(false);
+    expect(makeUser('PAUSED').canLogin()).toBe(true);
     expect(makeUser('ACTIVE').canLogin()).toBe(true);
     expect(makeUser('GRADUATED').canLogin()).toBe(true);
     expect(makeUser('PENDING_REASSIGNMENT').canLogin()).toBe(true);

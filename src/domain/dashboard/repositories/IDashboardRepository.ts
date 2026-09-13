@@ -23,9 +23,9 @@ export interface DashboardSummary {
 
 export type NotificationItem =
   | {
-      type: 'REASSIGNMENT';
+      type: 'PENDING_REASSIGNMENT';
       createdAt: Date;
-      reassignmentId: string;
+      userId: string;
       userName: string;
     }
   | {

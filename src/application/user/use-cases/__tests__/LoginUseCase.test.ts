@@ -39,6 +39,7 @@ function makeUserRepo(): IUserRepository {
     update: vi.fn(),
     delete: vi.fn(),
     countByRole: vi.fn(),
+    findExpiredPaused: vi.fn(),
   };
 }
 
@@ -98,11 +99,11 @@ describe('LoginUseCase', () => {
     );
   });
 
-  it('throws ForbiddenError for PAUSED user', async () => {
+  it('PAUSED user can login and receives tokens', async () => {
     vi.mocked(userRepo.findByEmail).mockResolvedValue(makeUser('PAUSED'));
-    await expect(useCase.execute({ email: 'test@example.com', password: 'p' })).rejects.toThrow(
-      ForbiddenError
-    );
+    const result = await useCase.execute({ email: 'test@example.com', password: 'p' });
+    expect(result.user.status).toBe('PAUSED');
+    expect(result.accessToken).toBeDefined();
   });
 
   it('throws UnauthorizedError when passwordHash is null', async () => {

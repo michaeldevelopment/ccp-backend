@@ -1,7 +1,8 @@
 import {
   IProgressRepository,
   ProgressRecord,
-  ProgressRecordWithClass,
+  ModuleProgress,
+  ModuleProgressStatus,
   UpsertProgressData,
 } from '@domain/user/repositories/IProgressRepository';
 import { prisma } from './client';
@@ -24,6 +25,12 @@ function toRecord(r: {
     completed: r.completed,
     updatedAt: r.updatedAt,
   };
+}
+
+function deriveStatus(total: number, completed: number): ModuleProgressStatus {
+  if (total === 0 || completed === 0) return 'NOT_STARTED';
+  if (completed >= total) return 'COMPLETED';
+  return 'IN_PROGRESS';
 }
 
 export class PrismaProgressRepository implements IProgressRepository {
@@ -58,15 +65,35 @@ export class PrismaProgressRepository implements IProgressRepository {
     return toRecord(row);
   }
 
-  async findByUserIdWithClass(userId: string): Promise<ProgressRecordWithClass[]> {
-    const rows = await prisma.progress.findMany({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
-      include: { class: { include: { module: { select: { number: true } } } } },
+  async findModuleProgressForUser(userId: string): Promise<ModuleProgress[]> {
+    const now = new Date();
+    const modules = await prisma.module.findMany({
+      orderBy: { number: 'asc' },
+      select: {
+        number: true,
+        classes: {
+          where: { isPublished: true, publishedAt: { lte: now } },
+          select: {
+            id: true,
+            progress: {
+              where: { userId, completed: true },
+              select: { id: true },
+              take: 1,
+            },
+          },
+        },
+      },
     });
-    return rows.map((r) => ({
-      ...toRecord(r),
-      class: { title: r.class.title, moduleNumber: r.class.module.number },
-    }));
+
+    return modules.map((m) => {
+      const totalClasses = m.classes.length;
+      const completedClasses = m.classes.filter((c) => c.progress.length > 0).length;
+      return {
+        moduleNumber: m.number,
+        totalClasses,
+        completedClasses,
+        status: deriveStatus(totalClasses, completedClasses),
+      };
+    });
   }
 }

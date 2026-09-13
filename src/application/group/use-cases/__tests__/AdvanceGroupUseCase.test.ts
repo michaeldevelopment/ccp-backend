@@ -10,6 +10,7 @@ function makeGroupRepo(): IGroupRepository {
     findMany: vi.fn(),
     findByIdWithStudents: vi.fn(),
     findStudentIds: vi.fn().mockResolvedValue([]),
+    findActiveStudentIds: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -39,42 +40,40 @@ describe('AdvanceGroupUseCase', () => {
     useCase = new AdvanceGroupUseCase(groupRepo);
   });
 
-  it('advances to next module', async () => {
+  it('avanza al siguiente módulo (M3 → M4)', async () => {
     vi.mocked(groupRepo.findById).mockResolvedValue(makeGroup([1, 2, 3]));
     vi.mocked(groupRepo.advanceModule).mockResolvedValue(makeGroup([1, 2, 3, 4]));
     await useCase.execute({ groupId: 'group-1' });
-    expect(groupRepo.advanceModule).toHaveBeenCalledWith('group-1', [1, 2, 3, 4], false);
+    expect(groupRepo.advanceModule).toHaveBeenCalledWith('group-1', [1, 2, 3, 4]);
   });
 
-  it('throws BusinessLogicError when already at module 9', async () => {
+  it('avanza hasta M9 (M8 → M9)', async () => {
+    vi.mocked(groupRepo.findById).mockResolvedValue(makeGroup([1, 2, 3, 4, 5, 6, 7, 8]));
+    vi.mocked(groupRepo.advanceModule).mockResolvedValue(makeGroup([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+    await useCase.execute({ groupId: 'group-1' });
+    expect(groupRepo.advanceModule).toHaveBeenCalledWith('group-1', [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it('en M9 con entryModule > 1 wrappea a M1', async () => {
+    vi.mocked(groupRepo.findById).mockResolvedValue(makeGroup([3, 4, 5, 6, 7, 8, 9], 3));
+    vi.mocked(groupRepo.advanceModule).mockResolvedValue(makeGroup([3, 4, 5, 6, 7, 8, 9, 1], 3));
+    await useCase.execute({ groupId: 'group-1' });
+    expect(groupRepo.advanceModule).toHaveBeenCalledWith('group-1', [3, 4, 5, 6, 7, 8, 9, 1]);
+  });
+
+  it('con los 9 módulos cubiertos (empezó en M1) → BusinessLogicError', async () => {
     vi.mocked(groupRepo.findById).mockResolvedValue(makeGroup([1, 2, 3, 4, 5, 6, 7, 8, 9]));
     await expect(useCase.execute({ groupId: 'group-1' })).rejects.toThrow(BusinessLogicError);
     expect(groupRepo.advanceModule).not.toHaveBeenCalled();
   });
 
-  it('calls advanceModule with triggerReassignment=true when advancing to module 9', async () => {
-    vi.mocked(groupRepo.findById).mockResolvedValue(makeGroup([1, 2, 3, 4, 5, 6, 7, 8]));
-    vi.mocked(groupRepo.advanceModule).mockResolvedValue(makeGroup([1, 2, 3, 4, 5, 6, 7, 8, 9]));
-    await useCase.execute({ groupId: 'group-1' });
-    expect(groupRepo.advanceModule).toHaveBeenCalledWith(
-      'group-1',
-      [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      true
-    );
+  it('con los 9 módulos cubiertos vía wrap (empezó en M3) → BusinessLogicError', async () => {
+    vi.mocked(groupRepo.findById).mockResolvedValue(makeGroup([3, 4, 5, 6, 7, 8, 9, 1, 2], 3));
+    await expect(useCase.execute({ groupId: 'group-1' })).rejects.toThrow(BusinessLogicError);
+    expect(groupRepo.advanceModule).not.toHaveBeenCalled();
   });
 
-  it('calls advanceModule with triggerReassignment=false when advancing to module 8', async () => {
-    vi.mocked(groupRepo.findById).mockResolvedValue(makeGroup([1, 2, 3, 4, 5, 6, 7]));
-    vi.mocked(groupRepo.advanceModule).mockResolvedValue(makeGroup([1, 2, 3, 4, 5, 6, 7, 8]));
-    await useCase.execute({ groupId: 'group-1' });
-    expect(groupRepo.advanceModule).toHaveBeenCalledWith(
-      'group-1',
-      [1, 2, 3, 4, 5, 6, 7, 8],
-      false
-    );
-  });
-
-  it('throws NotFoundError when group does not exist', async () => {
+  it('NotFoundError cuando el grupo no existe', async () => {
     vi.mocked(groupRepo.findById).mockResolvedValue(null);
     await expect(useCase.execute({ groupId: 'ghost' })).rejects.toThrow(NotFoundError);
   });

@@ -1,6 +1,5 @@
 import { IClassRepository } from '@domain/class/repositories/IClassRepository';
 import { IUserRepository } from '@domain/user/repositories/IUserRepository';
-import { IGroupRepository } from '@domain/group/repositories/IGroupRepository';
 import { NotFoundError, ForbiddenError } from '@domain/shared/errors';
 import { ClassResult, toClassResult, toStudentClassResult } from './classResult';
 
@@ -13,8 +12,7 @@ interface GetClassInput {
 export class GetClassUseCase {
   constructor(
     private readonly classRepo: IClassRepository,
-    private readonly userRepo: IUserRepository,
-    private readonly groupRepo: IGroupRepository
+    private readonly userRepo: IUserRepository
   ) {}
 
   async execute(input: GetClassInput): Promise<ClassResult> {
@@ -28,15 +26,7 @@ export class GetClassUseCase {
       }
 
       const user = await this.userRepo.findById(input.userId);
-      if (!user || !user.groupId || user.entryModule === null) {
-        throw new ForbiddenError('No tienes acceso a esta clase');
-      }
-
-      const group = await this.groupRepo.findById(user.groupId);
-      if (!group) throw new ForbiddenError('No tienes acceso a esta clase');
-
-      const accessible = group.unlockedModules.filter((m) => m >= user.entryModule!);
-      if (!accessible.includes(cls.moduleNumber)) {
+      if (!user || !user.accessibleModules.includes(cls.moduleNumber)) {
         throw new ForbiddenError('No tienes acceso a esta clase');
       }
     }

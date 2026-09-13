@@ -12,7 +12,6 @@ import {
   moduleRouter,
   classRouter,
   progressRouter,
-  reassignmentRouter,
   dashboardRouter,
   notificationsRouter,
 } from '@presentation/http/routes';
@@ -36,7 +35,6 @@ app.use('/groups', groupRouter);
 app.use('/modules', moduleRouter);
 app.use('/classes', classRouter);
 app.use('/progress', progressRouter);
-app.use('/reassignments', reassignmentRouter);
 app.use('/dashboard', dashboardRouter);
 app.use('/notifications', notificationsRouter);
 
