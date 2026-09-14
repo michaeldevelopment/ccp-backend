@@ -17,6 +17,9 @@
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:backfill-completed": "tsx prisma/backfill-completed-modules.ts",
     "prisma:studio": "prisma studio",
     "prepare": "husky"
   },

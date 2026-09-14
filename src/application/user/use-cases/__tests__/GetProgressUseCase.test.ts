@@ -8,7 +8,7 @@ function makeProgressRepo(): IProgressRepository {
     findByUserId: vi.fn(),
     findByUserAndClass: vi.fn(),
     upsert: vi.fn(),
-    findByUserIdWithClass: vi.fn(),
+    findModuleProgressForUser: vi.fn(),
   };
 }
 

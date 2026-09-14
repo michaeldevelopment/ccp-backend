@@ -29,4 +29,5 @@ export interface IClassRepository {
   findDueForPublication(): Promise<Class[]>;
   markPublished(id: string): Promise<Class>;
   findActiveStudentEmailsForModule(moduleNumber: number): Promise<string[]>;
+  findPublishedIdsByModule(moduleNumber: number): Promise<string[]>;
 }

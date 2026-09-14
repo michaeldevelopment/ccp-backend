@@ -10,8 +10,8 @@ export const UpdateUserDto = z.object({
   email: z.string().email('Email inválido').optional(),
   role: z.enum(['COACH', 'TEACHER', 'STUDENT']).optional(),
   status: z
-    .enum(['ACTIVE', 'PAUSED', 'GRADUATED', 'PENDING_REASSIGNMENT'], {
-      message: 'Estado inválido',
+    .enum(['ACTIVE', 'PAUSED', 'GRADUATED'], {
+      message: 'Estado inválido. PENDING_REASSIGNMENT solo lo asigna el sistema automáticamente',
     })
     .optional(),
   groupId: z.string().uuid('groupId debe ser un UUID').nullable().optional(),

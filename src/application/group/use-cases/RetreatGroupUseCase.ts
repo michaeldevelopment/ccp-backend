@@ -10,12 +10,14 @@ export class RetreatGroupUseCase {
     if (!group) throw new NotFoundError('Grupo no encontrado');
 
     if (!group.canRetreat()) {
-      throw new BusinessLogicError('El grupo ya está en el módulo mínimo (entryModule)');
+      throw new BusinessLogicError('El grupo ya está en el módulo inicial');
     }
 
     const current = group.currentModule();
-    const newModules = group.unlockedModules.filter((m) => m !== current);
-    const updated = await this.groupRepo.updateUnlockedModules(input.groupId, newModules);
+    const newModules = group.unlockedModules.slice(0, -1);
+    const updated = await this.groupRepo.updateUnlockedModules(input.groupId, newModules, {
+      retreatedModule: current,
+    });
 
     const studentIds = await this.groupRepo.findStudentIds(input.groupId);
     return toGroupResult(updated, studentIds);

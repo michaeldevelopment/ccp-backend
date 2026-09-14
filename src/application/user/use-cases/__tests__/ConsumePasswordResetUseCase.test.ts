@@ -21,6 +21,7 @@ function makeUserRepo(): IUserRepository {
     update: vi.fn(),
     delete: vi.fn(),
     countByRole: vi.fn(),
+    findExpiredPaused: vi.fn(),
   };
 }
 

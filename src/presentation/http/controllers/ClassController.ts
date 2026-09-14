@@ -9,7 +9,6 @@ import { ValidateVimeoUseCase } from '@application/class/use-cases/ValidateVimeo
 import { PrismaClassRepository } from '@infrastructure/persistence/prisma/PrismaClassRepository';
 import { PrismaModuleRepository } from '@infrastructure/persistence/prisma/PrismaModuleRepository';
 import { PrismaUserRepository } from '@infrastructure/persistence/prisma/PrismaUserRepository';
-import { PrismaGroupRepository } from '@infrastructure/persistence/prisma/PrismaGroupRepository';
 import { VimeoService } from '@infrastructure/vimeo/VimeoService';
 import { EmailService } from '@infrastructure/email/EmailService';
 import {
@@ -19,17 +18,16 @@ import {
   ValidateVimeoDto,
   ListClassesDto,
 } from '@presentation/dtos/class.dto';
-import { ValidationError } from '@domain/shared/errors';
+import { ValidationError, UnauthorizedError } from '@domain/shared/errors';
 
 const classRepo = new PrismaClassRepository();
 const moduleRepo = new PrismaModuleRepository();
 const userRepo = new PrismaUserRepository();
-const groupRepo = new PrismaGroupRepository();
 const vimeoService = new VimeoService();
 const emailService = new EmailService();
 
 const listClassesUseCase = new ListClassesUseCase(classRepo);
-const getClassUseCase = new GetClassUseCase(classRepo, userRepo, groupRepo);
+const getClassUseCase = new GetClassUseCase(classRepo, userRepo);
 const createClassUseCase = new CreateClassUseCase(classRepo, moduleRepo, vimeoService);
 const updateClassUseCase = new UpdateClassUseCase(classRepo, vimeoService, emailService);
 const deleteClassUseCase = new DeleteClassUseCase(classRepo);
@@ -45,10 +43,12 @@ export class ClassController {
   }
 
   async getById(req: Request, res: Response): Promise<void> {
+    const user = req.user;
+    if (!user) throw new UnauthorizedError('No autenticado');
     const result = await getClassUseCase.execute({
       classId: String(req.params['id']),
-      userId: req.user!.id,
-      role: req.user!.role,
+      userId: user.id,
+      role: user.role,
     });
     res.status(200).json(result);
   }

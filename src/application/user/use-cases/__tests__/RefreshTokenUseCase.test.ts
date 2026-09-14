@@ -40,6 +40,7 @@ function makeUserRepo(): IUserRepository {
     update: vi.fn(),
     delete: vi.fn(),
     countByRole: vi.fn(),
+    findExpiredPaused: vi.fn(),
   };
 }
 
@@ -86,9 +87,10 @@ describe('RefreshTokenUseCase', () => {
     await expect(useCase.execute({ refreshToken: 'old-raw' })).rejects.toThrow(UnauthorizedError);
   });
 
-  it('throws ForbiddenError for PAUSED user', async () => {
+  it('PAUSED user can refresh token', async () => {
     vi.mocked(userRepo.findByRefreshTokenHash).mockResolvedValue(makeResult('PAUSED'));
-    await expect(useCase.execute({ refreshToken: 'token' })).rejects.toThrow(ForbiddenError);
+    const result = await useCase.execute({ refreshToken: 'token' });
+    expect(result.accessToken).toBeDefined();
   });
 
   it('throws ForbiddenError for PENDING_ACTIVATION user', async () => {

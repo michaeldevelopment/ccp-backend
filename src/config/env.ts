@@ -9,6 +9,7 @@ const schema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32),
   SENDGRID_API_KEY: z.string().min(1),
   SENDGRID_FROM_EMAIL: z.string().email(),
+  SENDGRID_TEMPLATE_ID: z.string().min(1),
   VIMEO_ACCESS_TOKEN: z.string().min(1),
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

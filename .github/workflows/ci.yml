@@ -22,6 +22,7 @@ jobs:
       JWT_REFRESH_SECRET: ci-refresh-secret-not-used-at-runtime-only-for-boot
       SENDGRID_API_KEY: SG.ci-fake
       SENDGRID_FROM_EMAIL: ci@example.com
+      SENDGRID_TEMPLATE_ID: d-ci-fake-template-id
       VIMEO_ACCESS_TOKEN: ci-fake
       FRONTEND_URL: http://localhost:3001
 

@@ -2,13 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import { checkStudentStatus } from '@presentation/http/middleware/checkStudentStatus';
 import { IUserRepository } from '@domain/user/repositories/IUserRepository';
-import {
-  IReassignmentRepository,
-  ReassignmentRecord,
-} from '@domain/reassignment/repositories/IReassignmentRepository';
 import { User } from '@domain/user/entities/User';
 import { ForbiddenError } from '@domain/shared/errors';
-import { Role } from '@prisma/client';
+import { Role, UserStatus } from '@prisma/client';
 
 function makeUserRepo(): IUserRepository {
   return {
@@ -24,23 +20,11 @@ function makeUserRepo(): IUserRepository {
     update: vi.fn(),
     delete: vi.fn(),
     countByRole: vi.fn(),
+    findExpiredPaused: vi.fn(),
   };
 }
 
-function makeReassignmentRepo(): IReassignmentRepository {
-  return {
-    findById: vi.fn(),
-    findByIdWithUser: vi.fn(),
-    findByUserId: vi.fn(),
-    findPending: vi.fn(),
-    updateStatus: vi.fn(),
-    resolveAndActivateUser: vi.fn(),
-    graduateUser: vi.fn(),
-    undoResolution: vi.fn(),
-  };
-}
-
-function makeUser(status: string): User {
+function makeUser(status: string, graduatedAt: Date | null = null): User {
   return new User({
     id: 'u-1',
     email: 'a@b.com',
@@ -48,16 +32,13 @@ function makeUser(status: string): User {
     passwordHash: '$h',
     refreshTokenHash: null,
     role: Role.STUDENT,
-    status: status as any,
+    status: status as UserStatus,
     groupId: null,
     entryModule: null,
+    graduatedAt,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-}
-
-function makeReassignment(resolvedAt: Date | null): ReassignmentRecord {
-  return { id: 'ra-1', userId: 'u-1', status: 'GRADUATED', createdAt: new Date(), resolvedAt };
 }
 
 function makeReq(role: string): Partial<Request> {
@@ -66,17 +47,15 @@ function makeReq(role: string): Partial<Request> {
 
 describe('checkStudentStatus middleware', () => {
   let userRepo: IUserRepository;
-  let reassignmentRepo: IReassignmentRepository;
   let next: NextFunction;
 
   beforeEach(() => {
     userRepo = makeUserRepo();
-    reassignmentRepo = makeReassignmentRepo();
     next = vi.fn();
   });
 
   it('TEACHER → llama next() sin consultar DB', async () => {
-    const middleware = checkStudentStatus(userRepo, reassignmentRepo);
+    const middleware = checkStudentStatus(userRepo);
     await middleware(makeReq('TEACHER') as Request, {} as Response, next);
     expect(next).toHaveBeenCalledOnce();
     expect(userRepo.findById).not.toHaveBeenCalled();
@@ -84,32 +63,29 @@ describe('checkStudentStatus middleware', () => {
 
   it('STUDENT ACTIVE → llama next()', async () => {
     vi.mocked(userRepo.findById).mockResolvedValue(makeUser('ACTIVE'));
-    const middleware = checkStudentStatus(userRepo, reassignmentRepo);
+    const middleware = checkStudentStatus(userRepo);
     await middleware(makeReq('STUDENT') as Request, {} as Response, next);
     expect(next).toHaveBeenCalledOnce();
   });
 
-  it('STUDENT PAUSED → ForbiddenError', async () => {
+  it('STUDENT PAUSED → puede acceder a su contenido previo (llama next)', async () => {
     vi.mocked(userRepo.findById).mockResolvedValue(makeUser('PAUSED'));
-    const middleware = checkStudentStatus(userRepo, reassignmentRepo);
-    await expect(middleware(makeReq('STUDENT') as Request, {} as Response, next)).rejects.toThrow(
-      ForbiddenError
-    );
-    expect(next).not.toHaveBeenCalled();
+    const middleware = checkStudentStatus(userRepo);
+    await middleware(makeReq('STUDENT') as Request, {} as Response, next);
+    expect(next).toHaveBeenCalledOnce();
   });
 
   it('STUDENT PENDING_REASSIGNMENT → ForbiddenError', async () => {
     vi.mocked(userRepo.findById).mockResolvedValue(makeUser('PENDING_REASSIGNMENT'));
-    const middleware = checkStudentStatus(userRepo, reassignmentRepo);
+    const middleware = checkStudentStatus(userRepo);
     await expect(middleware(makeReq('STUDENT') as Request, {} as Response, next)).rejects.toThrow(
       ForbiddenError
     );
   });
 
-  it('STUDENT GRADUATED sin registro de reasignación → ForbiddenError', async () => {
-    vi.mocked(userRepo.findById).mockResolvedValue(makeUser('GRADUATED'));
-    vi.mocked(reassignmentRepo.findByUserId).mockResolvedValue(null);
-    const middleware = checkStudentStatus(userRepo, reassignmentRepo);
+  it('STUDENT GRADUATED sin graduatedAt → ForbiddenError', async () => {
+    vi.mocked(userRepo.findById).mockResolvedValue(makeUser('GRADUATED', null));
+    const middleware = checkStudentStatus(userRepo);
     await expect(middleware(makeReq('STUDENT') as Request, {} as Response, next)).rejects.toThrow(
       ForbiddenError
     );
@@ -117,21 +93,19 @@ describe('checkStudentStatus middleware', () => {
   });
 
   it('STUDENT GRADUATED dentro de 3 meses → llama next()', async () => {
-    vi.mocked(userRepo.findById).mockResolvedValue(makeUser('GRADUATED'));
-    const recentResolution = new Date();
-    recentResolution.setMonth(recentResolution.getMonth() - 1);
-    vi.mocked(reassignmentRepo.findByUserId).mockResolvedValue(makeReassignment(recentResolution));
-    const middleware = checkStudentStatus(userRepo, reassignmentRepo);
+    const recent = new Date();
+    recent.setMonth(recent.getMonth() - 1);
+    vi.mocked(userRepo.findById).mockResolvedValue(makeUser('GRADUATED', recent));
+    const middleware = checkStudentStatus(userRepo);
     await middleware(makeReq('STUDENT') as Request, {} as Response, next);
     expect(next).toHaveBeenCalledOnce();
   });
 
   it('STUDENT GRADUATED después de 3 meses → ForbiddenError', async () => {
-    vi.mocked(userRepo.findById).mockResolvedValue(makeUser('GRADUATED'));
-    const expiredResolution = new Date();
-    expiredResolution.setMonth(expiredResolution.getMonth() - 4);
-    vi.mocked(reassignmentRepo.findByUserId).mockResolvedValue(makeReassignment(expiredResolution));
-    const middleware = checkStudentStatus(userRepo, reassignmentRepo);
+    const expired = new Date();
+    expired.setMonth(expired.getMonth() - 4);
+    vi.mocked(userRepo.findById).mockResolvedValue(makeUser('GRADUATED', expired));
+    const middleware = checkStudentStatus(userRepo);
     await expect(middleware(makeReq('STUDENT') as Request, {} as Response, next)).rejects.toThrow(
       ForbiddenError
     );

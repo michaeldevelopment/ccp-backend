@@ -6,21 +6,19 @@ import { GetMyModulesUseCase } from '@application/user/use-cases/GetMyModulesUse
 import { GetMyClassesUseCase } from '@application/user/use-cases/GetMyClassesUseCase';
 import { PrismaUserRepository } from '@infrastructure/persistence/prisma/PrismaUserRepository';
 import { PrismaProgressRepository } from '@infrastructure/persistence/prisma/PrismaProgressRepository';
-import { PrismaGroupRepository } from '@infrastructure/persistence/prisma/PrismaGroupRepository';
 import { PrismaStudentContentRepository } from '@infrastructure/persistence/prisma/PrismaStudentContentRepository';
 import { UpdateMeDto } from '@presentation/dtos/me.dto';
 import { ValidationError, UnauthorizedError } from '@domain/shared/errors';
 
 const userRepo = new PrismaUserRepository();
 const progressRepo = new PrismaProgressRepository();
-const groupRepo = new PrismaGroupRepository();
 const contentRepo = new PrismaStudentContentRepository();
 
 const getMeUseCase = new GetMeUseCase(userRepo);
 const updateMeUseCase = new UpdateMeUseCase(userRepo);
 const getMyProgressUseCase = new GetMyProgressUseCase(userRepo, progressRepo);
-const getMyModulesUseCase = new GetMyModulesUseCase(userRepo, groupRepo, contentRepo);
-const getMyClassesUseCase = new GetMyClassesUseCase(userRepo, groupRepo, contentRepo);
+const getMyModulesUseCase = new GetMyModulesUseCase(userRepo, contentRepo);
+const getMyClassesUseCase = new GetMyClassesUseCase(userRepo, contentRepo);
 
 export class MeController {
   async getMe(req: Request, res: Response): Promise<void> {

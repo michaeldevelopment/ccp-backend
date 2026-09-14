@@ -10,15 +10,11 @@ export class AdvanceGroupUseCase {
     if (!group) throw new NotFoundError('Grupo no encontrado');
 
     if (!group.canAdvance()) {
-      throw new BusinessLogicError('El grupo ya está en el módulo máximo (9)');
+      throw new BusinessLogicError('El grupo ya cubrió los 9 módulos');
     }
 
-    const nextModule = group.currentModule() + 1;
-    const updated = await this.groupRepo.advanceModule(
-      input.groupId,
-      [...group.unlockedModules, nextModule],
-      nextModule === 9
-    );
+    const newModules = [...group.unlockedModules, group.nextModule()];
+    const updated = await this.groupRepo.advanceModule(input.groupId, newModules);
 
     const studentIds = await this.groupRepo.findStudentIds(input.groupId);
     return toGroupResult(updated, studentIds);

@@ -10,6 +10,7 @@ function makeGroupRepo(): IGroupRepository {
     findMany: vi.fn(),
     findByIdWithStudents: vi.fn(),
     findStudentIds: vi.fn().mockResolvedValue([]),
+    findActiveStudentIds: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -33,6 +34,7 @@ function makeUserRepo(): IUserRepository {
     update: vi.fn(),
     delete: vi.fn(),
     countByRole: vi.fn(),
+    findExpiredPaused: vi.fn(),
   };
 }
 

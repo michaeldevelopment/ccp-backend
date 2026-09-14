@@ -2,10 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GetClassUseCase } from '@application/class/use-cases/GetClassUseCase';
 import { IClassRepository } from '@domain/class/repositories/IClassRepository';
 import { IUserRepository } from '@domain/user/repositories/IUserRepository';
-import { IGroupRepository } from '@domain/group/repositories/IGroupRepository';
 import { Class } from '@domain/class/entities/Class';
 import { User } from '@domain/user/entities/User';
-import { Group } from '@domain/group/entities/Group';
 import { Role } from '@prisma/client';
 import { ForbiddenError, NotFoundError } from '@domain/shared/errors';
 
@@ -19,6 +17,7 @@ function makeClassRepo(): IClassRepository {
     findDueForPublication: vi.fn(),
     markPublished: vi.fn(),
     findActiveStudentEmailsForModule: vi.fn(),
+    findPublishedIdsByModule: vi.fn(),
   };
 }
 
@@ -36,21 +35,7 @@ function makeUserRepo(): IUserRepository {
     update: vi.fn(),
     delete: vi.fn(),
     countByRole: vi.fn(),
-  };
-}
-
-function makeGroupRepo(): IGroupRepository {
-  return {
-    findById: vi.fn(),
-    findMany: vi.fn(),
-    findByIdWithStudents: vi.fn(),
-    findStudentIds: vi.fn().mockResolvedValue([]),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    hasStudents: vi.fn(),
-    updateUnlockedModules: vi.fn(),
-    advanceModule: vi.fn(),
+    findExpiredPaused: vi.fn(),
   };
 }
 
@@ -88,7 +73,7 @@ function makeUnpublishedClass(): Class {
   });
 }
 
-function makeUser(groupId: string | null, entryModule: number | null): User {
+function makeUser(accessibleModules: number[]): User {
   return new User({
     id: 'u-1',
     email: 'a@b.com',
@@ -97,19 +82,9 @@ function makeUser(groupId: string | null, entryModule: number | null): User {
     refreshTokenHash: null,
     role: Role.STUDENT,
     status: 'ACTIVE',
-    groupId,
-    entryModule,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
-}
-
-function makeGroup(unlockedModules: number[]): Group {
-  return new Group({
-    id: 'g-1',
-    name: 'G1',
+    groupId: 'g-1',
     entryModule: 3,
-    unlockedModules,
+    accessibleModules,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -118,14 +93,12 @@ function makeGroup(unlockedModules: number[]): Group {
 describe('GetClassUseCase', () => {
   let classRepo: IClassRepository;
   let userRepo: IUserRepository;
-  let groupRepo: IGroupRepository;
   let useCase: GetClassUseCase;
 
   beforeEach(() => {
     classRepo = makeClassRepo();
     userRepo = makeUserRepo();
-    groupRepo = makeGroupRepo();
-    useCase = new GetClassUseCase(classRepo, userRepo, groupRepo);
+    useCase = new GetClassUseCase(classRepo, userRepo);
   });
 
   it('TEACHER: retorna la clase completa sin verificar acceso', async () => {
@@ -143,8 +116,7 @@ describe('GetClassUseCase', () => {
 
   it('STUDENT con módulo desbloqueado y clase publicada → retorna clase con vimeoUrl y embedUrl', async () => {
     vi.mocked(classRepo.findById).mockResolvedValue(makePublishedClass(3));
-    vi.mocked(userRepo.findById).mockResolvedValue(makeUser('g-1', 3));
-    vi.mocked(groupRepo.findById).mockResolvedValue(makeGroup([3, 4, 5]));
+    vi.mocked(userRepo.findById).mockResolvedValue(makeUser([3, 4, 5]));
     const result = await useCase.execute({ classId: 'cls-1', userId: 'u-1', role: 'STUDENT' });
     expect(result.id).toBe('cls-1');
     expect(result.embedUrl).toBe('https://player.vimeo.com/video/123');
@@ -160,8 +132,7 @@ describe('GetClassUseCase', () => {
 
   it('STUDENT sin módulo desbloqueado → ForbiddenError', async () => {
     vi.mocked(classRepo.findById).mockResolvedValue(makePublishedClass(6));
-    vi.mocked(userRepo.findById).mockResolvedValue(makeUser('g-1', 3));
-    vi.mocked(groupRepo.findById).mockResolvedValue(makeGroup([3, 4, 5]));
+    vi.mocked(userRepo.findById).mockResolvedValue(makeUser([3, 4, 5]));
     await expect(
       useCase.execute({ classId: 'cls-1', userId: 'u-1', role: 'STUDENT' })
     ).rejects.toThrow(ForbiddenError);
@@ -169,7 +140,6 @@ describe('GetClassUseCase', () => {
 
   it('STUDENT con clase no publicada → ForbiddenError', async () => {
     vi.mocked(classRepo.findById).mockResolvedValue(makeUnpublishedClass());
-    vi.mocked(userRepo.findById).mockResolvedValue(makeUser('g-1', 3));
     await expect(
       useCase.execute({ classId: 'cls-1', userId: 'u-1', role: 'STUDENT' })
     ).rejects.toThrow(ForbiddenError);

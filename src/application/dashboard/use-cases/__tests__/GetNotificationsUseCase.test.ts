@@ -20,7 +20,7 @@ describe('GetNotificationsUseCase', () => {
 
   it('retorna reasignaciones y clases programadas con total correcto', async () => {
     const items: NotificationItem[] = [
-      { type: 'REASSIGNMENT', createdAt: new Date(), reassignmentId: 'ra-1', userName: 'Test' },
+      { type: 'PENDING_REASSIGNMENT', createdAt: new Date(), userId: 'u-1', userName: 'Test' },
       {
         type: 'SCHEDULED_CLASS',
         createdAt: new Date(),
@@ -33,7 +33,7 @@ describe('GetNotificationsUseCase', () => {
     const result = await useCase.execute();
     expect(result.total).toBe(2);
     expect(result.items).toHaveLength(2);
-    expect(result.items[0].type).toBe('REASSIGNMENT');
+    expect(result.items[0].type).toBe('PENDING_REASSIGNMENT');
     expect(result.items[1].type).toBe('SCHEDULED_CLASS');
   });
 

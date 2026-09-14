@@ -25,6 +25,7 @@ function makeClassRepo(): IClassRepository {
     findDueForPublication: vi.fn(),
     markPublished: vi.fn(),
     findActiveStudentEmailsForModule: vi.fn(),
+    findPublishedIdsByModule: vi.fn(),
   };
 }
 
@@ -73,6 +74,7 @@ function makePublishedClass(): Class {
 describe('publicationJob', () => {
   let classRepo: IClassRepository;
   let emailService: IEmailService;
+  let scheduledFn: () => Promise<void>;
 
   beforeEach(async () => {
     classRepo = makeClassRepo();
@@ -81,25 +83,27 @@ describe('publicationJob', () => {
     vi.mocked(classRepo.findActiveStudentEmailsForModule).mockResolvedValue(['a@b.com']);
     const { startPublicationJob } = await import('@infrastructure/jobs/publicationJob');
     startPublicationJob(classRepo, emailService);
+    if (!cronState.fn) throw new Error('cronState.fn not set');
+    scheduledFn = cronState.fn;
   });
 
   it('marca las clases vencidas como publicadas y envía emails', async () => {
     vi.mocked(classRepo.findDueForPublication).mockResolvedValue([makeDueClass(true)]);
-    await cronState.fn!();
+    await scheduledFn();
     expect(classRepo.markPublished).toHaveBeenCalledWith('cls-1');
     expect(emailService.sendNewClassEmail).toHaveBeenCalledWith('a@b.com', 'Clase 1', 3);
   });
 
   it('clase con notify=false → no envía emails', async () => {
     vi.mocked(classRepo.findDueForPublication).mockResolvedValue([makeDueClass(false)]);
-    await cronState.fn!();
+    await scheduledFn();
     expect(classRepo.markPublished).toHaveBeenCalledOnce();
     expect(emailService.sendNewClassEmail).not.toHaveBeenCalled();
   });
 
   it('sin clases vencidas → no hace nada', async () => {
     vi.mocked(classRepo.findDueForPublication).mockResolvedValue([]);
-    await cronState.fn!();
+    await scheduledFn();
     expect(classRepo.markPublished).not.toHaveBeenCalled();
   });
 });

@@ -16,11 +16,16 @@ export interface GroupWithStudentIds {
   studentIds: string[];
 }
 
+export interface UpdateUnlockedModulesOpts {
+  retreatedModule?: number;
+}
+
 export interface IGroupRepository {
   findById(id: string): Promise<Group | null>;
   findMany(filters: GroupFilters): Promise<GroupWithStudentIds[]>;
   findByIdWithStudents(id: string): Promise<GroupWithStudents | null>;
   findStudentIds(groupId: string): Promise<string[]>;
+  findActiveStudentIds(groupId: string): Promise<string[]>;
   create(data: {
     name: string;
     entryModule: number;
@@ -33,6 +38,10 @@ export interface IGroupRepository {
   ): Promise<Group>;
   delete(id: string): Promise<void>;
   hasStudents(id: string): Promise<boolean>;
-  updateUnlockedModules(id: string, modules: number[]): Promise<Group>;
-  advanceModule(id: string, newModules: number[], triggerReassignment: boolean): Promise<Group>;
+  updateUnlockedModules(
+    id: string,
+    modules: number[],
+    opts?: UpdateUnlockedModulesOpts
+  ): Promise<Group>;
+  advanceModule(id: string, newModules: number[]): Promise<Group>;
 }

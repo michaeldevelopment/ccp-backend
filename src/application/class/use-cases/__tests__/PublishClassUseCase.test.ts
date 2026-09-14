@@ -15,6 +15,7 @@ function makeClassRepo(): IClassRepository {
     findDueForPublication: vi.fn(),
     markPublished: vi.fn(),
     findActiveStudentEmailsForModule: vi.fn(),
+    findPublishedIdsByModule: vi.fn(),
   };
 }
 

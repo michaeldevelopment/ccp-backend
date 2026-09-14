@@ -8,8 +8,13 @@ export interface ProgressRecord {
   updatedAt: Date;
 }
 
-export interface ProgressRecordWithClass extends ProgressRecord {
-  class: { title: string; moduleNumber: number };
+export type ModuleProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+
+export interface ModuleProgress {
+  moduleNumber: number;
+  totalClasses: number;
+  completedClasses: number;
+  status: ModuleProgressStatus;
 }
 
 export interface UpsertProgressData {
@@ -24,5 +29,5 @@ export interface IProgressRepository {
   findByUserId(userId: string): Promise<ProgressRecord[]>;
   findByUserAndClass(userId: string, classId: string): Promise<ProgressRecord | null>;
   upsert(data: UpsertProgressData): Promise<ProgressRecord>;
-  findByUserIdWithClass(userId: string): Promise<ProgressRecordWithClass[]>;
+  findModuleProgressForUser(userId: string): Promise<ModuleProgress[]>;
 }

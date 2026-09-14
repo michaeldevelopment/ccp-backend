@@ -10,6 +10,10 @@ export interface UserProps {
   status: UserStatus;
   groupId: string | null;
   entryModule: number | null;
+  accessibleModules?: number[];
+  completedModules?: number[];
+  pausedAt?: Date | null;
+  graduatedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +28,10 @@ export class User {
   readonly status: UserStatus;
   readonly groupId: string | null;
   readonly entryModule: number | null;
+  readonly accessibleModules: number[];
+  readonly completedModules: number[];
+  readonly pausedAt: Date | null;
+  readonly graduatedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
@@ -37,6 +45,10 @@ export class User {
     this.status = props.status;
     this.groupId = props.groupId;
     this.entryModule = props.entryModule;
+    this.accessibleModules = props.accessibleModules ?? [];
+    this.completedModules = props.completedModules ?? [];
+    this.pausedAt = props.pausedAt ?? null;
+    this.graduatedAt = props.graduatedAt ?? null;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
@@ -54,6 +66,6 @@ export class User {
   }
 
   canLogin(): boolean {
-    return this.status !== 'PENDING_ACTIVATION' && this.status !== 'PAUSED';
+    return this.status !== 'PENDING_ACTIVATION';
   }
 }

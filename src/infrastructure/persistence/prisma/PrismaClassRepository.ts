@@ -112,4 +112,16 @@ export class PrismaClassRepository implements IClassRepository {
     });
     return users.map((u) => u.email);
   }
+
+  async findPublishedIdsByModule(moduleNumber: number): Promise<string[]> {
+    const rows = await prisma.class.findMany({
+      where: {
+        isPublished: true,
+        publishedAt: { lte: new Date() },
+        module: { number: moduleNumber },
+      },
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
 }

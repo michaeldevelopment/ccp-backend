@@ -1,6 +1,5 @@
 import { IModuleRepository } from '@domain/module/repositories/IModuleRepository';
 import { IUserRepository } from '@domain/user/repositories/IUserRepository';
-import { IGroupRepository } from '@domain/group/repositories/IGroupRepository';
 import { NotFoundError } from '@domain/shared/errors';
 import { ModuleResult, toModuleResult } from './moduleResult';
 
@@ -13,8 +12,7 @@ interface GetModuleInput {
 export class GetModuleUseCase {
   constructor(
     private readonly moduleRepo: IModuleRepository,
-    private readonly userRepo: IUserRepository,
-    private readonly groupRepo: IGroupRepository
+    private readonly userRepo: IUserRepository
   ) {}
 
   async execute(input: GetModuleInput): Promise<ModuleResult> {
@@ -26,14 +24,8 @@ export class GetModuleUseCase {
     }
 
     const user = await this.userRepo.findById(input.userId);
-    if (!user || !user.groupId || user.entryModule === null) {
-      return toModuleResult(module, false);
-    }
+    if (!user) return toModuleResult(module, false);
 
-    const group = await this.groupRepo.findById(user.groupId);
-    if (!group) return toModuleResult(module, false);
-
-    const accessible = group.unlockedModules.filter((m) => m >= user.entryModule!);
-    return toModuleResult(module, accessible.includes(module.number));
+    return toModuleResult(module, user.accessibleModules.includes(module.number));
   }
 }
