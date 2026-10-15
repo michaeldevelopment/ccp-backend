@@ -8,6 +8,7 @@ const ctrl = new ModuleController();
 
 router.get('/', authenticate, authorize('STUDENT', 'TEACHER', 'COACH'), ctrl.list);
 router.get('/:number', authenticate, authorize('STUDENT', 'TEACHER', 'COACH'), ctrl.getByNumber);
+router.post('/', authenticate, authorize('COACH'), ctrl.create);
 router.put('/:number', authenticate, authorize('COACH'), ctrl.update);
 
 export { router as moduleRouter };
