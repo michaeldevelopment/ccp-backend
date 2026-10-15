@@ -18,7 +18,7 @@ function makeModule(number: number): Module {
 }
 
 function makeModuleRepo(): IModuleRepository {
-  return { findAll: vi.fn(), findByNumber: vi.fn(), update: vi.fn() };
+  return { findAll: vi.fn(), findByNumber: vi.fn(), create: vi.fn(), update: vi.fn() };
 }
 
 function makeUserRepo(): IUserRepository {

@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { ListModulesUseCase } from '@application/module/use-cases/ListModulesUseCase';
 import { GetModuleUseCase } from '@application/module/use-cases/GetModuleUseCase';
+import { CreateModuleUseCase } from '@application/module/use-cases/CreateModuleUseCase';
 import { UpdateModuleUseCase } from '@application/module/use-cases/UpdateModuleUseCase';
 import { PrismaModuleRepository } from '@infrastructure/persistence/prisma/PrismaModuleRepository';
 import { PrismaUserRepository } from '@infrastructure/persistence/prisma/PrismaUserRepository';
-import { UpdateModuleDto } from '@presentation/dtos/module.dto';
+import { CreateModuleDto, UpdateModuleDto } from '@presentation/dtos/module.dto';
 import { ValidationError, UnauthorizedError } from '@domain/shared/errors';
 
 const moduleRepo = new PrismaModuleRepository();
@@ -12,6 +13,7 @@ const userRepo = new PrismaUserRepository();
 
 const listModulesUseCase = new ListModulesUseCase(moduleRepo, userRepo);
 const getModuleUseCase = new GetModuleUseCase(moduleRepo, userRepo);
+const createModuleUseCase = new CreateModuleUseCase(moduleRepo);
 const updateModuleUseCase = new UpdateModuleUseCase(moduleRepo);
 
 export class ModuleController {
@@ -38,6 +40,13 @@ export class ModuleController {
       role: user.role,
     });
     res.status(200).json(result);
+  }
+
+  async create(req: Request, res: Response): Promise<void> {
+    const body = CreateModuleDto.safeParse(req.body);
+    if (!body.success) throw new ValidationError('Datos inválidos', body.error.flatten());
+    const result = await createModuleUseCase.execute(body.data);
+    res.status(201).json(result);
   }
 
   async update(req: Request, res: Response): Promise<void> {
