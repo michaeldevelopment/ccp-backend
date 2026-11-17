@@ -6,6 +6,7 @@ import { Class } from '@domain/class/entities/Class';
 import { User } from '@domain/user/entities/User';
 import { Role } from '@prisma/client';
 import { ForbiddenError, NotFoundError } from '@domain/shared/errors';
+import { ClassResult } from '@application/class/use-cases/classResult';
 
 function makeClassRepo(): IClassRepository {
   return {
@@ -114,18 +115,22 @@ describe('GetClassUseCase', () => {
     expect(result.id).toBe('cls-1');
   });
 
-  it('STUDENT con módulo desbloqueado y clase publicada → retorna clase con vimeoUrl y embedUrl', async () => {
+  it('STUDENT con módulo desbloqueado y clase publicada → retorna clase con embedUrl y sin vimeoUrl', async () => {
     vi.mocked(classRepo.findById).mockResolvedValue(makePublishedClass(3));
     vi.mocked(userRepo.findById).mockResolvedValue(makeUser([3, 4, 5]));
     const result = await useCase.execute({ classId: 'cls-1', userId: 'u-1', role: 'STUDENT' });
     expect(result.id).toBe('cls-1');
     expect(result.embedUrl).toBe('https://player.vimeo.com/video/123');
-    expect(result.vimeoUrl).toBe('https://vimeo.com/123');
+    expect(result).not.toHaveProperty('vimeoUrl');
   });
 
   it('TEACHER: retorna clase con vimeoUrl y embedUrl', async () => {
     vi.mocked(classRepo.findById).mockResolvedValue(makePublishedClass(3));
-    const result = await useCase.execute({ classId: 'cls-1', userId: 'u-1', role: 'TEACHER' });
+    const result = (await useCase.execute({
+      classId: 'cls-1',
+      userId: 'u-1',
+      role: 'TEACHER',
+    })) as ClassResult;
     expect(result.vimeoUrl).toBe('https://vimeo.com/123');
     expect(result.embedUrl).toBe('https://player.vimeo.com/video/123');
   });

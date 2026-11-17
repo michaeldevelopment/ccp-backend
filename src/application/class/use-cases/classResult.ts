@@ -1,20 +1,13 @@
 import { Class, Attachment } from '@domain/class/entities/Class';
+import { toEmbedUrl } from '@domain/class/services/vimeoEmbed';
 
-const VIMEO_ID_RE = /(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/;
-
-function toEmbedUrl(vimeoUrl: string): string {
-  const match = VIMEO_ID_RE.exec(vimeoUrl);
-  return match ? `https://player.vimeo.com/video/${match[1]}` : vimeoUrl;
-}
-
-export interface ClassResult {
+export interface StudentClassResult {
   id: string;
   moduleId: string;
   moduleNumber: number;
   title: string;
   description: string;
   kind: string;
-  vimeoUrl: string;
   embedUrl: string;
   complementText: string;
   textBody: string | null;
@@ -28,7 +21,11 @@ export interface ClassResult {
   updatedAt: Date;
 }
 
-export function toClassResult(cls: Class): ClassResult {
+export interface ClassResult extends StudentClassResult {
+  vimeoUrl: string;
+}
+
+function toBaseClassResult(cls: Class): StudentClassResult {
   return {
     id: cls.id,
     moduleId: cls.moduleId,
@@ -36,7 +33,6 @@ export function toClassResult(cls: Class): ClassResult {
     title: cls.title,
     description: cls.description,
     kind: 'VIDEO',
-    vimeoUrl: cls.vimeoUrl,
     embedUrl: toEmbedUrl(cls.vimeoUrl),
     complementText: '',
     textBody: null,
@@ -51,6 +47,10 @@ export function toClassResult(cls: Class): ClassResult {
   };
 }
 
-export function toStudentClassResult(cls: Class): ClassResult {
-  return toClassResult(cls);
+export function toClassResult(cls: Class): ClassResult {
+  return { ...toBaseClassResult(cls), vimeoUrl: cls.vimeoUrl };
+}
+
+export function toStudentClassResult(cls: Class): StudentClassResult {
+  return toBaseClassResult(cls);
 }

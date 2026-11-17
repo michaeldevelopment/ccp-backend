@@ -4,6 +4,7 @@ import {
   VisibleClassRecord,
 } from '@domain/user/repositories/IStudentContentRepository';
 import { Attachment } from '@domain/class/entities/Class';
+import { toEmbedUrl } from '@domain/class/services/vimeoEmbed';
 import { prisma } from './client';
 
 export class PrismaStudentContentRepository implements IStudentContentRepository {
@@ -38,7 +39,7 @@ export class PrismaStudentContentRepository implements IStudentContentRepository
       title: r.title,
       description: r.description,
       kind: 'VIDEO',
-      vimeoUrl: r.vimeoUrl,
+      embedUrl: toEmbedUrl(r.vimeoUrl),
       complementText: '',
       textBody: null,
       attachments: (r.attachments as unknown as Attachment[]) ?? [],
