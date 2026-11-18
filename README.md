@@ -9,7 +9,7 @@ API REST para la plataforma privada de e-learning del programa CCP (Centro de Cr
 - **Arquitectura:** Domain-Driven Design (DDD)
 - **ORM:** Prisma + PostgreSQL (Supabase)
 - **Auth:** JWT (access 15min + refresh 30 días)
-- **Email:** SendGrid + React Email
+- **Email:** Resend
 - **Video:** Vimeo Pro (domain lock)
 - **Tests:** Vitest
 - **Deploy:** Railway
@@ -18,7 +18,7 @@ API REST para la plataforma privada de e-learning del programa CCP (Centro de Cr
 
 - Node.js 20+
 - Cuenta en Supabase (PostgreSQL)
-- API key de SendGrid
+- API key de Resend y un dominio verificado
 - Access token de Vimeo
 
 ## Levantar en local
@@ -45,18 +45,18 @@ El servidor corre en `http://localhost:3000` por defecto.
 
 ## Variables de entorno
 
-| Variable              | Descripción                                 |
-| --------------------- | ------------------------------------------- |
-| `DATABASE_URL`        | Connection string de Supabase (pooler)      |
-| `DIRECT_URL`          | Connection string directa (migraciones)     |
-| `JWT_SECRET`          | Secreto para access tokens (mín. 32 chars)  |
-| `JWT_REFRESH_SECRET`  | Secreto para refresh tokens (mín. 32 chars) |
-| `SENDGRID_API_KEY`    | API key de SendGrid                         |
-| `SENDGRID_FROM_EMAIL` | Email remitente verificado en SendGrid      |
-| `VIMEO_ACCESS_TOKEN`  | Token de Vimeo para validar URLs de clases  |
-| `FRONTEND_URL`        | URL del frontend (CORS)                     |
-| `PORT`                | Puerto del servidor (default: 3000)         |
-| `NODE_ENV`            | `development` \| `production`               |
+| Variable             | Descripción                                 |
+| -------------------- | ------------------------------------------- |
+| `DATABASE_URL`       | Connection string de Supabase (pooler)      |
+| `DIRECT_URL`         | Connection string directa (migraciones)     |
+| `JWT_SECRET`         | Secreto para access tokens (mín. 32 chars)  |
+| `JWT_REFRESH_SECRET` | Secreto para refresh tokens (mín. 32 chars) |
+| `RESEND_API_KEY`     | API key de Resend                           |
+| `EMAIL_FROM`         | Email remitente del dominio verificado      |
+| `VIMEO_ACCESS_TOKEN` | Token de Vimeo para validar URLs de clases  |
+| `FRONTEND_URL`       | URL del frontend (CORS)                     |
+| `PORT`               | Puerto del servidor (default: 3000)         |
+| `NODE_ENV`           | `development` \| `production`               |
 
 ## Scripts
 

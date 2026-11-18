@@ -6,9 +6,9 @@ Tres roles: Coach (admin), Teacher (contenido), Student (acceso por grupo).
 
 ## Stack
 
-Node.js + TypeScript · Express · DDD · Prisma + PostgreSQL (Supabase) · Zod · Bcrypt · JWT · SendGrid + React Email · Winston · Vitest · ESLint/Prettier/Husky.
+Node.js + TypeScript · Express · DDD · Prisma + PostgreSQL (Supabase) · Zod · Bcrypt · JWT · Resend · Winston · Vitest · ESLint/Prettier/Husky.
 
-**Infra:** Backend en Railway · DB en Supabase · Email por SendGrid · Video en Vimeo Pro (domain lock) · Adjuntos como links de Google Drive.
+**Infra:** Backend en Railway · DB en Supabase · Email por Resend · Video en Vimeo Pro (domain lock) · Adjuntos como links de Google Drive.
 
 ## Comandos
 
@@ -24,7 +24,7 @@ npx prisma studio        # DB browser
 ```
 
 Env vars requeridas (validadas con Zod al arranque, el proceso falla si falta cualquiera):
-`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `SENDGRID_TEMPLATE_ID`, `VIMEO_ACCESS_TOKEN`, `FRONTEND_URL`.
+`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, `VIMEO_ACCESS_TOKEN`, `FRONTEND_URL`.
 
 ## Reglas no negociables
 
@@ -51,7 +51,7 @@ Env vars requeridas (validadas con Zod al arranque, el proceso falla si falta cu
 
 **`.claude/memory/`** — convenciones y contratos que ya están decididos:
 
-- `integrations.md` — SendGrid, Vimeo, Google Drive
+- `integrations.md` — Resend, Vimeo, Google Drive
 - `response-envelopes.md` — qué endpoints envuelven listas y cuáles no
 - `entity-shapes.md` — shape exacta de Class, Group, Reassignment, Notification, User en responses
 - `error-handling.md` — clases tipadas y shape de respuesta de error

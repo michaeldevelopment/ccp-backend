@@ -24,7 +24,7 @@ Presentation → Application → Domain ← Infrastructure
 - **NUNCA** exponer el link directo de Vimeo. Solo el embed. Domain lock en Vimeo Pro.
 - **NUNCA** revelar si un email existe o no en `POST /auth/forgot-password` (respuesta siempre 200).
 - **NUNCA** commitear secrets. Solo `.env.example` con placeholders va al repo.
-- Los env vars críticos (`DATABASE_URL`, `JWT_SECRET`, `SENDGRID_API_KEY`, `VIMEO_TOKEN`) deben validarse con Zod al arranque. Si falta uno, el proceso **falla**.
+- Los env vars críticos (`DATABASE_URL`, `JWT_SECRET`, `RESEND_API_KEY`, `VIMEO_TOKEN`) deben validarse con Zod al arranque. Si falta uno, el proceso **falla**.
 - JWT en headers. Sin refresh token en MVP.
 - RBAC en middleware antes de ejecutar el use case. Los controllers no validan roles.
 
