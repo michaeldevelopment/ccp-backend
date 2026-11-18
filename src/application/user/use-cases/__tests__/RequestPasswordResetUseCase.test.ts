@@ -92,7 +92,7 @@ describe('RequestPasswordResetUseCase', () => {
 
   it('does not throw when email service fails', async () => {
     vi.mocked(userRepo.findByEmail).mockResolvedValue(makeUser());
-    vi.mocked(emailService.sendPasswordResetEmail).mockRejectedValue(new Error('SendGrid down'));
+    vi.mocked(emailService.sendPasswordResetEmail).mockRejectedValue(new Error('Resend down'));
     await expect(useCase.execute({ email: 'test@example.com' })).resolves.toBeUndefined();
   });
 });

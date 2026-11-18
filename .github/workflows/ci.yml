@@ -20,9 +20,8 @@ jobs:
       DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
       JWT_SECRET: ci-jwt-secret-not-used-at-runtime-only-for-boot
       JWT_REFRESH_SECRET: ci-refresh-secret-not-used-at-runtime-only-for-boot
-      SENDGRID_API_KEY: SG.ci-fake
-      SENDGRID_FROM_EMAIL: ci@example.com
-      SENDGRID_TEMPLATE_ID: d-ci-fake-template-id
+      RESEND_API_KEY: re_ci-fake
+      EMAIL_FROM: ci@example.com
       VIMEO_ACCESS_TOKEN: ci-fake
       FRONTEND_URL: http://localhost:3001
 
@@ -35,6 +34,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      # npm 10 revienta resolviendo el peer opcional @vitest/browser-playwright (bug de arborist).
+      - name: Upgrade npm
+        run: npm install -g npm@11
 
       - name: Install dependencies
         run: npm ci

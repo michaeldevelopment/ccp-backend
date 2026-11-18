@@ -19,6 +19,8 @@ import { env } from '@config/env';
 
 const app = express();
 
+app.set('trust proxy', env.NODE_ENV === 'production' ? 1 : false);
+
 app.use(helmet());
 app.use(cors({ origin: env.FRONTEND_URL }));
 app.use(express.json());

@@ -98,7 +98,7 @@ describe('CreateUserUseCase', () => {
   });
 
   it('does not throw when email service fails', async () => {
-    vi.mocked(emailService.sendActivationEmail).mockRejectedValue(new Error('SendGrid down'));
+    vi.mocked(emailService.sendActivationEmail).mockRejectedValue(new Error('Resend down'));
     await expect(
       useCase.execute({ email: 'new@example.com', role: Role.STUDENT })
     ).resolves.toBeDefined();

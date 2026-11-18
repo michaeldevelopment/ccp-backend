@@ -1,7 +1,12 @@
 import { IClassRepository } from '@domain/class/repositories/IClassRepository';
 import { IUserRepository } from '@domain/user/repositories/IUserRepository';
 import { NotFoundError, ForbiddenError } from '@domain/shared/errors';
-import { ClassResult, toClassResult, toStudentClassResult } from './classResult';
+import {
+  ClassResult,
+  StudentClassResult,
+  toClassResult,
+  toStudentClassResult,
+} from './classResult';
 
 interface GetClassInput {
   classId: string;
@@ -15,7 +20,7 @@ export class GetClassUseCase {
     private readonly userRepo: IUserRepository
   ) {}
 
-  async execute(input: GetClassInput): Promise<ClassResult> {
+  async execute(input: GetClassInput): Promise<ClassResult | StudentClassResult> {
     const cls = await this.classRepo.findById(input.classId);
     if (!cls) throw new NotFoundError('Clase no encontrada');
 

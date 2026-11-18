@@ -14,7 +14,7 @@ export interface VisibleClassRecord {
   title: string;
   description: string;
   kind: string;
-  vimeoUrl: string;
+  embedUrl: string;
   complementText: string;
   textBody: string | null;
   attachments: Attachment[];
